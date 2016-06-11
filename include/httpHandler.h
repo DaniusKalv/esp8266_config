@@ -12,11 +12,32 @@
 #include <espconn.h>
 
 #define HTML_POS 0x12000
-#define HTML_SIZE 4269
+#define HTML_SIZE 4283
+#define CHUNK_SIZE 2048
 
 typedef struct espconn espconn;
 
+struct callbackParams{
+	espconn *pEspConn;
+	uint8 amountOfSends;
+	uint8 amountOfSent;
+	uint16 sendRemainder;
+	bool chunkedSend;
+	uint8 *flashDataAddr;
+};
+
+typedef struct callbackParams callbackParams;
+
 void handleGet(espconn *pEspConn, httpHeaderStruct *header);
+
+void sendData(struct espconn *pEspConn, uint8 *header, uint32 headerLength,
+		uint8 *dataAddrFlash, uint32 dataLength);
+
+void sendDataChunk(struct espconn *pEspConn, uint8 *dataAddrFlash, uint32 dataLength);
+
+void sentCB(void *arg);
+
+void readFlash(char *dst, char *src, int len);
 
 void readFlashUnaligned(char *dst, char *src, int len);
 

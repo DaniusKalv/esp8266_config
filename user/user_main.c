@@ -22,10 +22,6 @@
 
 #define DELAY 500 /* milliseconds */
 
-//SoftAp configuration
-#define SSID "espWifi"
-#define SSID_PASSWORD "internet"
-
 LOCAL os_timer_t blink_timer;
 LOCAL uint8_t led_state = 0;
 LOCAL bool waitingForPost = false;
@@ -111,17 +107,18 @@ void user_rf_pre_init(void) {
 void user_init(void) {
 	// Configure the UART
 	uart_init(BIT_RATE_115200, BIT_RATE_74880);
-	ets_uart_printf("\r\nUART initialized.\r\n");
+	//ets_uart_printf("\r\nUART initialized.\r\n");
 	// Configure pin as a GPIO
 	PIN_FUNC_SELECT(LED_GPIO_MUX, LED_GPIO_FUNC);
 	// Set up a timer to blink the LED
 	// os_timer_disarm(ETSTimer *ptimer)
-	os_timer_disarm(&blink_timer);
+	//os_timer_disarm(&blink_timer);
 	// os_timer_setfn(ETSTimer *ptimer, ETSTimerFunc *pfunction, void *parg)
-	os_timer_setfn(&blink_timer, (os_timer_func_t *) blink_cb, (void *) 0);
+	//os_timer_setfn(&blink_timer, (os_timer_func_t *) blink_cb, (void *) 0);
 	// void os_timer_arm(ETSTimer *ptimer,uint32_t milliseconds, bool repeat_flag)
-	os_timer_arm(&blink_timer, DELAY, 1);
-	ets_uart_printf("Blinky running.\r\n");
+	//os_timer_arm(&blink_timer, DELAY, 1);
+	//ets_uart_printf("Blinky running.\r\n");
+	os_printf("UART initialized\r\n");
 
 	wifi_set_event_handler_cb(eventHandler);
 

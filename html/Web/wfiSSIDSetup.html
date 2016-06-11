@@ -179,12 +179,12 @@
         var wifiSelect = document.getElementById('wifiSelect');
         wifiSelect[0].textContent = "Scanning...";
         wifiSelect[0].selected = true;
-        /*xhrGet('/scanWifi', scanWifiCB);*/
+        xhrGet('/scanWifi', scanWifiCB);
 
-        setTimeout(function () {
+        /*setTimeout(function () {
             var wifis = { "ssids": [":)", "NETGEAR98", "HP-Print-27-ENVY 4500 series", "AirLink220c88", "ASUS", "vnprj9sk", "NETGEAR52", "Labas", "ZyXEL_367C"] };
             updateWifiList(wifis.ssids);
-        }, 1000);
+        }, 1000);*/
     }
 
     function updateWifiList(wifis) {
@@ -253,7 +253,9 @@
     function xhrGet(url, callbackFunction) {
         var xhr = new XMLHttpRequest();
         xhr.open('GET', encodeURI(url));
-        xhr.onload = callbackFunction(xhr);
+        xhr.onload = function () {
+            callbackFunction(xhr);
+        }
         xhr.send();
     }
 </script>
