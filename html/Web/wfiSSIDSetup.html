@@ -1,0 +1,259 @@
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
+    <link rel='icon' href='data:;base64,iVBORw0KGgo='>
+    <title>ESP8266</title>
+    <style>
+        <style > * {
+            box-sizing: border-box;
+        }
+
+        .row {
+            margin-top: 3vw;
+        }
+
+        html {
+            font-family: "Lucida Sans", sans-serif;
+        }
+
+        .header {
+            background-color: #2980b9;
+            color: white;
+            padding: 15px;
+            border-radius: 4px;
+            margin-left: 5%;
+            margin-right: 5%;
+        }
+
+        .button {
+            background-color: #1abc9c;
+            border: none;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 16px;
+            border-radius: 4px;
+            margin-left: 5%;
+            width: 90%;
+            cursor: pointer;
+            -webkit-transition-duration: 0.4s; /* Safari */
+            transition-duration: 0.4s;
+        }
+
+        .passwordBox {
+            border: 2px solid #1abc9c;
+            background-color: #ffffff;
+            color: #1abc9c;
+            cursor: text;
+        }
+
+        .noPassword {
+            border-color: #e85445;
+        }
+
+        .invisible {
+            display: none;
+        }
+
+        .shadow {
+            box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2), 0 6px 20px 0 rgba(0,0,0,0.19);
+        }
+
+        select {
+            width: 100%;
+        }
+
+        option {
+            border: 1px solid white;
+        }
+
+        .aside {
+            background-color: #33b5e5;
+            padding: 15px;
+            color: #ffffff;
+            text-align: center;
+            font-size: 14px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+        }
+
+        .footer {
+            background-color: #0099cc;
+            color: #ffffff;
+            text-align: center;
+            font-size: 12px;
+            padding: 15px;
+        }
+        /* For mobile phones: */
+        [class*="col-"] {
+            width: 100%;
+            float: left;
+            margin-top: 10px;
+        }
+
+        @media only screen and (min-width: 768px) {
+            /* For desktop: */
+            .col-1 {
+                width: 8.33%;
+            }
+
+            .col-2 {
+                width: 16.66%;
+            }
+
+            .col-3 {
+                width: 25%;
+            }
+
+            .col-4 {
+                width: 33.33%;
+            }
+
+            .col-5 {
+                width: 41.66%;
+            }
+
+            .col-6 {
+                width: 50%;
+            }
+
+            .col-7 {
+                width: 58.33%;
+            }
+
+            .col-8 {
+                width: 66.66%;
+            }
+
+            .col-9 {
+                width: 75%;
+            }
+
+            .col-10 {
+                width: 83.33%;
+            }
+
+            .col-11 {
+                width: 91.66%;
+            }
+
+            .col-12 {
+                width: 100%;
+            }
+
+            .button {
+                margin-left: 10%;
+                width: 80%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header shadow">
+        <h1>ESP8266 WIFI Setup</h1>
+    </div>
+
+    <div class="row">
+        <div class="col-6">
+            <button class="button shadow" onclick="scanWifi()">Scan</button>
+        </div>
+        <div class="col-6">
+            <select class="shadow button" id="wifiSelect" onchange="wifiListChange(this)">
+                <option selected>--WiFi--</option>
+            </select>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-6">
+            <input type="password" id="passwordBox" class="button passwordBox shadow invisible" placeholder="Password" onfocus="passwordBoxFocused(true, this)" onblur="passwordBoxFocused(false, this)" />
+        </div>
+        <div class="col-6">
+            <button class="button shadow invisible" id="connectButton" onclick="connectWifi()">Connect</button>
+        </div>
+    </div>
+</body>
+</html>
+
+<script type="text/javascript">
+    function scanWifi() {
+        var wifiSelect = document.getElementById('wifiSelect');
+        wifiSelect[0].textContent = "Scanning...";
+        wifiSelect[0].selected = true;
+        /*xhrGet('/scanWifi', scanWifiCB);*/
+
+        setTimeout(function () {
+            var wifis = { "ssids": [":)", "NETGEAR98", "HP-Print-27-ENVY 4500 series", "AirLink220c88", "ASUS", "vnprj9sk", "NETGEAR52", "Labas", "ZyXEL_367C"] };
+            updateWifiList(wifis.ssids);
+        }, 1000);
+    }
+
+    function updateWifiList(wifis) {
+        var wifiSelect = document.getElementById('wifiSelect');
+        wifiSelect[0].textContent = "--WiFi--";
+        var wifiLength = wifiSelect.length;
+        for (var i = 0; i < wifiLength - 1; i++) {
+            wifiSelect.remove(1);
+        }
+        wifis.forEach(function (element) {
+            var option = document.createElement("option");
+            option.text = element;
+            wifiSelect.add(option);
+        });
+    }
+
+    function wifiListChange(wifiList) {
+        if (wifiList.selectedIndex == 0) {
+            hideConnect();
+        }
+        else {
+            showConnect();
+        }
+    }
+
+    function showConnect() {
+        document.getElementById('connectButton').className = 'button shadow';
+        document.getElementById('passwordBox').className = 'button passwordBox shadow';
+    }
+
+    function hideConnect() {
+        document.getElementById('connectButton').className = 'invisible';
+        document.getElementById('passwordBox').className = 'invisible';
+    }
+
+    function passwordBoxFocused(focus, passwordBox) {
+        if(focus){
+            passwordBox.placeholder = '';
+            passwordBox.className = 'button passwordBox shadow';
+        }
+        else {
+            passwordBox.placeholder = 'Password';
+        }
+    }
+
+    function scanWifiCB(xhr){
+        if (xhr.status === 200) {
+            var wifis = JSON.parse(xhr.response);
+            updateWifiList(wifis.ssids);
+        }
+        else {
+            alert('Failed to get wifi list!');
+        }
+    }
+
+    function connectWifi() {
+        var passwordBox = document.getElementById('passwordBox');
+        if (passwordBox.value == '') {
+            passwordBox.className += ' noPassword';  
+        }
+        else {
+            /*TODO: create a POST request*/
+        }
+    }
+
+    function xhrGet(url, callbackFunction) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', encodeURI(url));
+        xhr.onload = callbackFunction(xhr);
+        xhr.send();
+    }
+</script>
