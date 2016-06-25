@@ -5,9 +5,9 @@
  *      Author: Danius
  */
 
+#include <osapi.h>
 #include "httpParser.h"
 #include "c_types.h"
-#include <osapi.h>
 
 struct httpHeaderStruct parseHttp(char *httpHeader, unsigned short headerLength)
 {
@@ -20,6 +20,7 @@ struct httpHeaderStruct parseHttp(char *httpHeader, unsigned short headerLength)
 		lineStart = textCopy(lineStart, httpHeader, buffer, '\r') + 2;
 		parseHttpElements(buffer, &httpHeaderStructure);
 	}
+	os_printf("Line start: %d Header length: %d\r\n", lineStart, headerLength);
 	return httpHeaderStructure;
 }
 
@@ -72,6 +73,11 @@ void parseHttpElements(char *text, httpHeaderStruct *receivedHttpHeader)
 	{
 		textCopy(6, text, receivedHttpHeader -> host, '\0');
 	}
+	else if(startsWith(text, "Content-Length: ")){
+		char length[5];
+		textCopy(16, text, length, '\0');
+		receivedHttpHeader->contentLength = strToNum(length);
+	}
 }
 
 
@@ -89,5 +95,16 @@ int textCopy(int start, char *text, char *dest, char delimiter)
 	memcpy(dest, text + start, end - start);
 	return end;
 }
+
+int strToNum(char *str){
+	int i, number = 0, power = 1;
+	uint8 length = strlen(str);
+	for(i = length; i > 0; i--){
+		number += (str[i-1] - 48) * power;
+		power *= 10;
+	}
+	return number;
+}
+
 
 

@@ -32,6 +32,8 @@ struct httpHeaderStruct
 	char path[200];
 	httpProtocols protocol;
 	char host[50];
+	//char *data;
+	int contentLength;
 };
 
 typedef struct httpHeaderStruct httpHeaderStruct;
@@ -41,5 +43,6 @@ int getAmountOfRows(char *text, unsigned short headerLength);
 void parseHttpElements(char *text, httpHeaderStruct *receivedHttpHeader);
 bool startsWith(const char *str, const char *pre);
 int textCopy(int start, char *text, char *dest, char delimiter);
+int strToNum(char *str);
 
 #endif /* INCLUDE_HTTPPARSER_H_ */

@@ -4,24 +4,28 @@
  *  Created on: May 19, 2016
  *      Author: Danius
  */
-#include "httpHandler.h"
+
 #include <osapi.h>
 #include <user_interface.h>
+#include "jsmn.h"
+#include "httpHandler.h"
 #include "c_types.h"
 #include "user_config.h"
 
 callbackParams localCallbackParams;
 
 void handleGet(struct espconn *pEspConn, httpHeaderStruct *header) {
+	os_printf("%s ret: %d\r\n", header->path, startsWith(header->path, "/scanWifi"));
 	if (strcmp(header->path, "/") == 0) {
 		uint8 header[] = "HTTP/1.0 200 OK\r\n\r\n"; //"HTTP/1.0 200 OK\r\nContent-Encoding:gzip\r\n\r\n";
 		sendData(pEspConn, header, sizeof(header), (uint8 *) HTML_POS,
 		HTML_SIZE);
-	} else if (strcmp(header->path, "/scanWifi")) {
+	} else if (strcmp(header->path, "/scanWifi") == 0) {
+		os_printf("Scan wifi\r\n");
 		localCallbackParams.pEspConn = pEspConn;
-		//localEspConn = pEspConn;
 		wifi_station_scan(NULL, scanCB);
 	} else {
+		os_printf("Page not found\r\n");
 		char data[] =
 				"HTTP/1.0 404 Not Found\r\nContent-Type: text/html\r\n\r\n<HTML><HEAD><TITLE>ESP8266</TITLE><link rel='icon' href='data:;base64,iVBORw0KGgo='></HEAD><BODY><H1>Shit man this page is not here</H1><p>I'm just a small ESP8266 module and I have to handle this error page</BODY></HTML>\r\n";
 		int length = sizeof(data);
@@ -30,14 +34,60 @@ void handleGet(struct espconn *pEspConn, httpHeaderStruct *header) {
 	}
 }
 
+void handlePost(espconn *pEspConn, httpHeaderStruct *header, char *postData, unsigned short dataLength){
+	int i,r;
+
+	os_printf("Handling post!\r\n");
+	os_printf("Parsing Json\r\n");
+
+	for(i = 0; i < dataLength; i++){
+		os_printf("%c", postData[i]);
+	}
+	os_printf("\r\n");
+
+	jsmn_parser p;
+	jsmntok_t t[128];
+	jsmn_init(&p);
+
+	r = jsmn_parse(&p, postData, dataLength, t, sizeof(t)/sizeof(t[0]));
+	if(r < 0){
+		os_printf("Couldn't parse JSON\r\n");
+	}
+
+	if(r < 1 || t[0].type != JSMN_OBJECT){
+		os_printf("Object expected\r\n");
+	}
+
+	os_printf("Amount of keys: %d\r\n", r);
+
+	for(i = 1; i < r; i++){
+		if(jsoneq(postData, &t[i], "ssid") == 0){
+			postData[t[i+1].end] = '\0';
+			os_printf("ssid: %s\r\n", postData + t[i+1].start);
+			i++;
+		}
+		else if(jsoneq(postData, &t[i], "password") == 0){
+			postData[t[i+1].end] = '\0';
+			os_printf("password: %s\r\n", postData + t[i+1].start);
+			i++;
+		}
+		else{
+			os_printf("Unexpected key\r\n");
+		}
+	}
+
+	uint8 data[] = "HTTP/1.0 200 OK\r\n\r\n";
+	espconn_send(pEspConn, data, sizeof(data));
+	espconn_disconnect(pEspConn);
+}
+
 void sendData(struct espconn *pEspConn, uint8 *header, uint32 headerLength,
-		uint8 *dataAddrFlash, uint32 dataLength) {
+	uint8 *dataAddrFlash, uint32 dataLength) {
 	headerLength -= 1; //Don't take last char (null)
 	uint8 buffer[CHUNK_SIZE];
 	memcpy(buffer, header, headerLength);
 	if ((headerLength + dataLength) > CHUNK_SIZE) {
 		localCallbackParams.pEspConn = pEspConn;
-		//localEspConn = pEspConn;
 		localCallbackParams.amountOfSends = (headerLength + dataLength) / CHUNK_SIZE;
 		localCallbackParams.sendRemainder = (headerLength + dataLength) % CHUNK_SIZE;
 		if (localCallbackParams.sendRemainder > 0)
@@ -130,6 +180,7 @@ void sentCB(void *arg) {
 			sendDataChunk(localCallbackParams.pEspConn, localCallbackParams.flashDataAddr, CHUNK_SIZE);
 		} else {
 			sendDataChunk(localCallbackParams.pEspConn, localCallbackParams.flashDataAddr, localCallbackParams.sendRemainder);
+			localCallbackParams.chunkedSend = false;
 			espconn_disconnect(localCallbackParams.pEspConn);
 		}
 	}
@@ -168,4 +219,13 @@ void scanCB(void *arg, STATUS status) {
 	memcpy(buffer + i, "]}", 2);
 	espconn_send(localCallbackParams.pEspConn, buffer, strlen(buffer));
 	espconn_disconnect(localCallbackParams.pEspConn);
+}
+
+
+static int jsoneq(const char *json, jsmntok_t *tok, const char *s) {
+	if (tok->type == JSMN_STRING && (int) strlen(s) == tok->end - tok->start &&
+			strncmp(json + tok->start, s, tok->end - tok->start) == 0) {
+		return 0;
+	}
+	return -1;
 }

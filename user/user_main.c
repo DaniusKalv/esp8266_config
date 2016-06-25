@@ -26,6 +26,8 @@ LOCAL os_timer_t blink_timer;
 LOCAL uint8_t led_state = 0;
 LOCAL bool waitingForPost = false;
 
+LOCAL httpHeaderStruct receivedHeader;
+
 //TCP
 static struct espconn conn1;
 static esp_tcp tcp1;
@@ -37,28 +39,31 @@ LOCAL void ICACHE_FLASH_ATTR blink_cb(void *arg) {
 
 void recvCB(void *arg, char *pData, unsigned short len) {
 	struct espconn *pEspConn = (struct espconn *) arg;
-	httpHeaderStruct receivedHeader;
+	//httpHeaderStruct receivedHeader;
 	os_printf("Received data!! - length = %d\n", len);
 	int i = 0;
 	for (i = 0; i < len; i++) {
 		os_printf("%c", pData[i]);
 	}
 	os_printf("\n");
+	os_printf("Waiting for post: %d\r\n", waitingForPost);
 
 	if (!waitingForPost) {
 		receivedHeader = parseHttp(pData, len);
+		os_printf("Method: %d\r\n", receivedHeader.httpMethod);
 		switch (receivedHeader.httpMethod) {
 		case GET:
 			handleGet(pEspConn, &receivedHeader);
 			break;
 		case POST:
+			os_printf("Data length: %d\r\n", receivedHeader.contentLength);
 			waitingForPost = true;
 			break;
 		}
 	} else {
-		os_printf("Data sent\r\n");
-		espconn_disconnect(pEspConn);
-		os_printf("Connection closed\r\n");
+		handlePost(pEspConn, &receivedHeader, pData, len);
+		waitingForPost = false;
+		os_printf("Post handled\r\n");
 	}
 }
 
@@ -99,6 +104,14 @@ void eventHandler(System_Event_t *event) {
 		//os_printf("Unexpected event: %d\n", event->event);
 		break;
 	}
+}
+
+static int jsoneq(const char *json, jsmntok_t *tok, const char *s) {
+	if (tok->type == JSMN_STRING && (int) strlen(s) == tok->end - tok->start &&
+			strncmp(json + tok->start, s, tok->end - tok->start) == 0) {
+		return 0;
+	}
+	return -1;
 }
 
 void user_rf_pre_init(void) {

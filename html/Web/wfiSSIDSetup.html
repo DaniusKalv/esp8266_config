@@ -179,7 +179,7 @@
         var wifiSelect = document.getElementById('wifiSelect');
         wifiSelect[0].textContent = "Scanning...";
         wifiSelect[0].selected = true;
-        xhrGet('/scanWifi', scanWifiCB);
+        xhrGet('/scanWifi', scanWifiCB, true);
 
         /*setTimeout(function () {
             var wifis = { "ssids": [":)", "NETGEAR98", "HP-Print-27-ENVY 4500 series", "AirLink220c88", "ASUS", "vnprj9sk", "NETGEAR52", "Labas", "ZyXEL_367C"] };
@@ -243,19 +243,41 @@
     function connectWifi() {
         var passwordBox = document.getElementById('passwordBox');
         if (passwordBox.value == '') {
-            passwordBox.className += ' noPassword';  
+            passwordBox.className += 'noPassword';  
         }
         else {
-            /*TODO: create a POST request*/
+            var wifiSelect = document.getElementById('wifiSelect');
+            var ssid = wifiSelect.options[wifiSelect.selectedIndex].textContent;
+            var password = passwordBox.value;
+            var data = { ssid: ssid, password: password };
+            xhrPost('/connectWifi', data, connectWifiCB, true);
         }
     }
 
-    function xhrGet(url, callbackFunction) {
+    function connectWifiCB(xhr){
+        if (xhr.status === 200) {
+            alert('Yeah!');
+        }
+        else {
+            alert('Failed to get wifi list!');
+        }
+    }
+
+    function xhrGet(url, callbackFunction, async) {
         var xhr = new XMLHttpRequest();
-        xhr.open('GET', encodeURI(url));
+        xhr.open('GET', encodeURI(url), async);
         xhr.onload = function () {
             callbackFunction(xhr);
-        }
+        };
         xhr.send();
+    }
+
+    function xhrPost(url, data, callbackFunction, async) {
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", encodeURI(url), async);
+        xhr.onload = function () {
+            callbackFunction(xhr);
+        };
+        xhr.send(JSON.stringify(data));
     }
 </script>
