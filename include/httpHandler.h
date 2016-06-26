@@ -31,7 +31,7 @@ typedef struct callbackParams callbackParams;
 
 void handleGet(espconn *pEspConn, httpHeaderStruct *header);
 
-void handlePost(espconn *pEspConn, httpHeaderStruct *header, char *postData, unsigned short dataLength);
+void handlePost(espconn *pEspConn, httpHeaderStruct *header, char *postData, int dataLength);
 
 void sendData(struct espconn *pEspConn, uint8 *header, uint32 headerLength,
 		uint8 *dataAddrFlash, uint32 dataLength);
@@ -47,5 +47,7 @@ void readFlashUnaligned(char *dst, char *src, int len);
 void scanCB(void *arg, STATUS status);
 
 static int jsoneq(const char *json, jsmntok_t *tok, const char *s);
+
+void connectWifi(espconn *pEspConn, char *postData, int dataLength);
 
 #endif /* INCLUDE_HTTPHANDLER_H_ */

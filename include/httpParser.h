@@ -32,8 +32,9 @@ struct httpHeaderStruct
 	char path[200];
 	httpProtocols protocol;
 	char host[50];
-	//char *data;
+	char *data;
 	int contentLength;
+	bool doubleTransmit;
 };
 
 typedef struct httpHeaderStruct httpHeaderStruct;

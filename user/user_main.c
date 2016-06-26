@@ -57,12 +57,22 @@ void recvCB(void *arg, char *pData, unsigned short len) {
 			break;
 		case POST:
 			os_printf("Data length: %d\r\n", receivedHeader.contentLength);
-			waitingForPost = true;
+			os_printf("Double transmit: %d\r\n", receivedHeader.doubleTransmit);
+			if(receivedHeader.doubleTransmit){
+				os_printf("Waiting for double transmit\r\n");
+				waitingForPost = true;
+			}
+			else{
+				os_printf("Handling post immediately, content length: %d\r\n", receivedHeader.contentLength);
+				waitingForPost = false;
+				handlePost(pEspConn, &receivedHeader, receivedHeader.data, receivedHeader.contentLength);
+				os_printf("Post handled\r\n");
+			}
 			break;
 		}
 	} else {
-		handlePost(pEspConn, &receivedHeader, pData, len);
 		waitingForPost = false;
+		handlePost(pEspConn, &receivedHeader, pData, len);
 		os_printf("Post handled\r\n");
 	}
 }

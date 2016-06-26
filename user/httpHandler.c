@@ -32,67 +32,32 @@ void handleGet(struct espconn *pEspConn, httpHeaderStruct *header) {
 	}
 }
 
-void handlePost(espconn *pEspConn, httpHeaderStruct *header, char *postData, unsigned short dataLength){
-	int i,r;
-
+void handlePost(espconn *pEspConn, httpHeaderStruct *header, char *postData,
+		int dataLength) {
 	os_printf("Handling post!\r\n");
-	os_printf("Parsing Json\r\n");
-
-	for(i = 0; i < dataLength; i++){
-		os_printf("%c", postData[i]);
+	if (strcmp(header->path, "/connectWifi") == 0) {
+		os_printf("connectWifi\r\n");
+		connectWifi(pEspConn, postData, dataLength);
 	}
-	os_printf("\r\n");
-
-	jsmn_parser p;
-	jsmntok_t t[128];
-	jsmn_init(&p);
-
-	r = jsmn_parse(&p, postData, dataLength, t, sizeof(t)/sizeof(t[0]));
-	if(r < 0){
-		os_printf("Couldn't parse JSON\r\n");
-	}
-
-	if(r < 1 || t[0].type != JSMN_OBJECT){
-		os_printf("Object expected\r\n");
-	}
-
-	os_printf("Amount of keys: %d\r\n", r);
-
-	for(i = 1; i < r; i++){
-		if(jsoneq(postData, &t[i], "ssid") == 0){
-			postData[t[i+1].end] = '\0';
-			os_printf("ssid: %s\r\n", postData + t[i+1].start);
-			i++;
-		}
-		else if(jsoneq(postData, &t[i], "password") == 0){
-			postData[t[i+1].end] = '\0';
-			os_printf("password: %s\r\n", postData + t[i+1].start);
-			i++;
-		}
-		else{
-			os_printf("Unexpected key\r\n");
-		}
-	}
-
-	uint8 data[] = "HTTP/1.0 200 OK\r\n\r\n";
-	espconn_send(pEspConn, data, sizeof(data));
-	espconn_disconnect(pEspConn);
 }
 
 void sendData(struct espconn *pEspConn, uint8 *header, uint32 headerLength,
-	uint8 *dataAddrFlash, uint32 dataLength) {
+		uint8 *dataAddrFlash, uint32 dataLength) {
 	headerLength -= 1; //Don't take last char (null)
 	uint8 buffer[CHUNK_SIZE];
 	memcpy(buffer, header, headerLength);
 	if ((headerLength + dataLength) > CHUNK_SIZE) {
 		localCallbackParams.pEspConn = pEspConn;
-		localCallbackParams.amountOfSends = (headerLength + dataLength) / CHUNK_SIZE;
-		localCallbackParams.sendRemainder = (headerLength + dataLength) % CHUNK_SIZE;
+		localCallbackParams.amountOfSends = (headerLength + dataLength)
+				/ CHUNK_SIZE;
+		localCallbackParams.sendRemainder = (headerLength + dataLength)
+				% CHUNK_SIZE;
 		if (localCallbackParams.sendRemainder > 0)
 			localCallbackParams.amountOfSends++;
 		readFlashUnaligned(buffer + headerLength, (char *) dataAddrFlash,
 		CHUNK_SIZE - headerLength);
-		localCallbackParams.flashDataAddr = dataAddrFlash + CHUNK_SIZE - headerLength;
+		localCallbackParams.flashDataAddr = dataAddrFlash + CHUNK_SIZE
+				- headerLength;
 		localCallbackParams.chunkedSend = true;
 		localCallbackParams.amountOfSent = 0;
 		int i;
@@ -171,13 +136,20 @@ void readFlashUnaligned(char *dst, char *src, int len) {
 
 void sentCB(void *arg) {
 	localCallbackParams.amountOfSent++;
-	os_printf("Amount of sent: %d, amount of sends: %d\r\n", localCallbackParams.amountOfSent,
+	os_printf("Amount of sent: %d, amount of sends: %d\r\n",
+			localCallbackParams.amountOfSent,
 			localCallbackParams.amountOfSends);
-	if (localCallbackParams.chunkedSend && (localCallbackParams.amountOfSent <= localCallbackParams.amountOfSends)) {
-		if (localCallbackParams.amountOfSent < localCallbackParams.amountOfSends - 1) {
-			sendDataChunk(localCallbackParams.pEspConn, localCallbackParams.flashDataAddr, CHUNK_SIZE);
+	if (localCallbackParams.chunkedSend
+			&& (localCallbackParams.amountOfSent
+					<= localCallbackParams.amountOfSends)) {
+		if (localCallbackParams.amountOfSent
+				< localCallbackParams.amountOfSends - 1) {
+			sendDataChunk(localCallbackParams.pEspConn,
+					localCallbackParams.flashDataAddr, CHUNK_SIZE);
 		} else {
-			sendDataChunk(localCallbackParams.pEspConn, localCallbackParams.flashDataAddr, localCallbackParams.sendRemainder);
+			sendDataChunk(localCallbackParams.pEspConn,
+					localCallbackParams.flashDataAddr,
+					localCallbackParams.sendRemainder);
 			localCallbackParams.chunkedSend = false;
 			espconn_disconnect(localCallbackParams.pEspConn);
 		}
@@ -195,13 +167,12 @@ void scanCB(void *arg, STATUS status) {
 	uint16 headerLength = i;
 
 	bool first = true;
-	while (bssInfo != NULL ) {
+	while (bssInfo != NULL) {
 		if (strstr(buffer + headerLength, bssInfo->ssid) == NULL) {
 			os_printf("ssid: %s\n", bssInfo->ssid);
 			if (first) {
 				first = !first;
-			}
-			else {
+			} else {
 				buffer[i] = ',';
 				i++;
 			}
@@ -219,11 +190,54 @@ void scanCB(void *arg, STATUS status) {
 	espconn_disconnect(localCallbackParams.pEspConn);
 }
 
-
 static int jsoneq(const char *json, jsmntok_t *tok, const char *s) {
-	if (tok->type == JSMN_STRING && (int) strlen(s) == tok->end - tok->start &&
-			strncmp(json + tok->start, s, tok->end - tok->start) == 0) {
+	if (tok->type == JSMN_STRING && (int) strlen(s) == tok->end - tok->start
+			&& strncmp(json + tok->start, s, tok->end - tok->start) == 0) {
 		return 0;
 	}
 	return -1;
+}
+
+void connectWifi(espconn *pEspConn, char *postData, int dataLength) {
+	int i, r;
+	os_printf("Parsing Json\r\n");
+	os_printf("Data length: %d\r\n", dataLength);
+
+	for (i = 0; i < dataLength; i++) {
+		os_printf("%c", postData[i]);
+	}
+	os_printf("\r\n");
+
+	jsmn_parser p;
+	jsmntok_t t[10];
+	jsmn_init(&p);
+
+	r = jsmn_parse(&p, postData, dataLength, t, sizeof(t) / sizeof(t[0]));
+	if (r < 0) {
+		os_printf("Couldn't parse JSON\r\n");
+	}
+
+	if (r < 1 || t[0].type != JSMN_OBJECT) {
+		os_printf("Object expected\r\n");
+	}
+
+	os_printf("Amount of keys: %d\r\n", r);
+
+	for (i = 1; i < r; i++) {
+		if (jsoneq(postData, &t[i], "ssid") == 0) {
+			postData[t[i + 1].end] = '\0';
+			os_printf("ssid: %s\r\n", postData + t[i + 1].start);
+			i++;
+		} else if (jsoneq(postData, &t[i], "password") == 0) {
+			postData[t[i + 1].end] = '\0';
+			os_printf("password: %s\r\n", postData + t[i + 1].start);
+			i++;
+		} else {
+			os_printf("Unexpected key\r\n");
+		}
+	}
+
+	uint8 data[] = "HTTP/1.0 200 OK\r\n\r\n";
+	espconn_send(pEspConn, data, sizeof(data));
+	espconn_disconnect(pEspConn);
 }

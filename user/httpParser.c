@@ -20,7 +20,14 @@ struct httpHeaderStruct parseHttp(char *httpHeader, unsigned short headerLength)
 		lineStart = textCopy(lineStart, httpHeader, buffer, '\r') + 2;
 		parseHttpElements(buffer, &httpHeaderStructure);
 	}
-	os_printf("Line start: %d Header length: %d\r\n", lineStart, headerLength);
+	os_printf("Leftover data: %d\r\n", headerLength - lineStart - 2);
+	if((headerLength - lineStart - 2) > 0){
+		httpHeaderStructure.doubleTransmit = false;
+		httpHeaderStructure.data = httpHeader + lineStart + 2;
+	}
+	else{
+		httpHeaderStructure.doubleTransmit = true;
+	}
 	return httpHeaderStructure;
 }
 
@@ -77,6 +84,8 @@ void parseHttpElements(char *text, httpHeaderStruct *receivedHttpHeader)
 		char length[5];
 		textCopy(16, text, length, '\0');
 		receivedHttpHeader->contentLength = strToNum(length);
+		os_printf("Content length: %d\r\n", strToNum(length));
+		os_printf("Parsed content length: %d\r\n", receivedHttpHeader->contentLength);
 	}
 }
 
@@ -93,15 +102,14 @@ int textCopy(int start, char *text, char *dest, char delimiter)
 	char *ptr = strchr(text + start, delimiter);
 	int end = ptr - text;
 	memcpy(dest, text + start, end - start);
-	if(delimiter != '\0'){
-		dest[end - start] = '\0';
-	}
+	dest[end - start] = '\0';
 	return end;
 }
 
 int strToNum(char *str){
 	int i, number = 0, power = 1;
 	uint8 length = strlen(str);
+	//os_printf("%s, length: %d\r\n", str, length);
 	for(i = length; i > 0; i--){
 		number += (str[i-1] - 48) * power;
 		power *= 10;
