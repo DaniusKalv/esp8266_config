@@ -15,13 +15,11 @@
 callbackParams localCallbackParams;
 
 void handleGet(struct espconn *pEspConn, httpHeaderStruct *header) {
-	os_printf("%s ret: %d\r\n", header->path, startsWith(header->path, "/scanWifi"));
 	if (strcmp(header->path, "/") == 0) {
 		uint8 header[] = "HTTP/1.0 200 OK\r\n\r\n"; //"HTTP/1.0 200 OK\r\nContent-Encoding:gzip\r\n\r\n";
 		sendData(pEspConn, header, sizeof(header), (uint8 *) HTML_POS,
 		HTML_SIZE);
 	} else if (strcmp(header->path, "/scanWifi") == 0) {
-		os_printf("Scan wifi\r\n");
 		localCallbackParams.pEspConn = pEspConn;
 		wifi_station_scan(NULL, scanCB);
 	} else {

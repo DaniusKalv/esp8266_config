@@ -93,6 +93,9 @@ int textCopy(int start, char *text, char *dest, char delimiter)
 	char *ptr = strchr(text + start, delimiter);
 	int end = ptr - text;
 	memcpy(dest, text + start, end - start);
+	if(delimiter != '\0'){
+		dest[end - start] = '\0';
+	}
 	return end;
 }
 
